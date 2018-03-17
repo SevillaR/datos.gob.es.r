@@ -14,7 +14,7 @@ Que hemos hecho:
 
 Siguientes pasos:  
 
-- Se puede explorar el API, pero el problema es el mismo que con SPARQL.
+- Se puede explorar el API (`utils/180317_Using_API.R`), pero el problema es el mismo que con SPARQL.
 - Lo útil seria crear fuciones que te permitan navegar por el grapho de recursos facilmente.
 
 Do you want to contribute? See our Code of conduct [here](https://github.com/SevillaR/datos.gov.es.r/blob/master/CODE_OF_CONDUCT.md) 

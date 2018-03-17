@@ -2,7 +2,7 @@ library(httr)
 library(jsonlite)
 url <- "http://datos.gob.es/apidata/catalog/dataset"
 
-# Make the GET request
+# Make the GET request:
 request_result_a <- GET(url, user_agent("vsslledo@gmail.com This is a test"))
 
 

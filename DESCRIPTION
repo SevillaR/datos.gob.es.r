@@ -1,0 +1,9 @@
+Package: datos.gov.es.r
+Version: 0.0.0.9000
+Title: Package to access programmatically datos.gov.es
+Description: Package to access programmatically datos.gov.es
+Authors@R: person("First", "Last", , "first.last@example.com", c("aut", "cre"))
+License: MIT
+Encoding: UTF-8
+LazyData: true
+ByteCompile: true

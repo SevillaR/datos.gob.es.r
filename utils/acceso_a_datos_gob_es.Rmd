@@ -1,0 +1,242 @@
+---
+title: "acceso_a_datos_gob_es"
+author: "Gabriel Kreplak"
+date: "18/4/2018"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(SPARQL)
+endpoint <- "http://datos.gob.es/virtuoso/sparql"
+
+```
+
+```{r 4 grafos disponibles}
+# Se pueden consultar los grafos disponibles con esta consulta:
+
+q <- "select distinct ?uri where { graph ?uri { ?s a ?t } }"
+
+res <- SPARQL(url=endpoint, q)
+str(res)
+```
+
+```{r tipos de dato por grafo}
+
+# Si queremos obtener a qué grafo pertenece la información, se puede especificar
+#de la siguiente manera donde la variable ?g vamos a ver en que grafo se encuentra cada ?x.
+
+q <- "select distinct ?grafo ?tipo_de_dato where { graph ?grafo { ?x a ?tipo_de_dato. } } limit 100"
+a <- SPARQL(url=endpoint, q)
+A_tipos_de_dato_por_grafo <- a$results
+table(A_tipos_de_dato_por_grafo$grafo)
+View(A_tipos_de_dato_por_grafo)
+```
+
+```{r etiquetas}
+q <- 'select distinct ?label where { ?x <http://www.w3.org/2004/02/skos/core#prefLabel> ?label.  }'
+a <- SPARQL(url=endpoint, q)
+B_etiquetas <- t(a$results)
+View(B_etiquetas)
+
+```
+
+```{r tipos en catálogo}
+
+#Podemos obtener los resultados de un solo de la siguiente manera:
+
+#q <- "select distinct ?type where {?x a ?type} LIMIT 100"
+q <- "select distinct ?type where { graph <http://datos.gob.es/catalogo> { ?x a ?type. } } limit 100"
+res <- SPARQL(url=endpoint, q)
+t(res$results)
+```
+
+```{r tipos en el grafo nti}
+
+#Ahora solo veremos las ?x que se encuentren en el grafo especificado
+
+#ejemplo:
+
+#Primero especificamos el grafo del Catálogo:
+
+q <- "select distinct ?tipo where
+{
+  graph <http://datos.gob.es/nti> {
+    ?x a ?tipo.
+  }
+}"
+res <- SPARQL(url=endpoint, q)
+t(res$results)
+```
+
+```{r tipos en catalogo + nti}
+
+#Ahora usaremos los dos grafos a la vez gracias a VALUES
+
+q <- "select distinct ?tipo where
+{
+  graph ?grafo {
+    ?x a ?tipo.
+  }
+  VALUES ?grafo { <http://datos.gob.es/catalogo> <http://datos.gob.es/nti> }
+}"
+res <- SPARQL(url=endpoint, q)
+t(res$results)
+```
+
+```{r 17270 datasets}
+
+#Ahora que ya conocemos los tipos, vamos a pedir todos los conjuntos de datos, que se corresponden con esta URI: http://www.w3.org/ns/dcat#Dataset
+
+q <- "select distinct ?dataset where
+{
+  ?dataset a <http://www.w3.org/ns/dcat#Dataset>
+}"
+res <- SPARQL(url=endpoint, q)
+C_datasets_es <- data.frame(t(res$results))
+View(C_datasets_es)
+#El resultado es una lista de URLs de todos los datasets.
+```
+
+```{r 16 propiedades de datasets}
+
+#Queremos obtener más información de los conjuntos de datos, pero sólo sabemos sus URIs, vamos a preguntar por todas sus propiedades:
+
+q <- "select distinct ?propiedad where
+{
+  ?dataset a <http://www.w3.org/ns/dcat#Dataset> . ?dataset ?propiedad ?valor .
+}"
+res <- SPARQL(url=endpoint, q)
+t(res$results)
+```
+
+```{r 112 publicadores de datasets}
+
+#Vamos a utilizar la propiedad http://purl.org/dc/terms/publisher para obtener todos los organismos que publican datos.
+
+q <- "select distinct ?publicador where
+{
+  ?ds a <http://www.w3.org/ns/dcat#Dataset> .
+  ?ds <http://purl.org/dc/terms/publisher> ?publicador .
+}"
+
+res <- SPARQL(url=endpoint, q)
+head(t(res$results))
+```
+
+```{r 3 propiedades de publicadores}
+
+#Con las URIs no sabemos el nombre de los organismos, vamos a preguntar por las propiedades de estas URIs
+
+q <- "select distinct ?propiedad where
+{
+  ?x a <http://www.w3.org/ns/dcat#Dataset> .
+  ?x <http://purl.org/dc/terms/publisher> ?publicador.
+  ?publicador ?propiedad ?valor.
+}"
+res <- SPARQL(url=endpoint, q)
+t(res$results)
+```
+
+```{r etiquetas publicadores}
+
+#Vamos a pedir la URI y la propiedad http://www.w3.org/2004/02/skos/core#prefLabel
+
+q <- "select distinct ?label ?publicador  where
+{
+  ?x a <http://www.w3.org/ns/dcat#Dataset> .
+  ?x <http://purl.org/dc/terms/publisher>
+    ?publicador. ?publicador <http://www.w3.org/2004/02/skos/core#prefLabel> ?label.
+}"
+res <- SPARQL(url=endpoint, q)
+D_etiquetas_publicadores <- res$results
+View(D_etiquetas_publicadores)
+```
+
+```{r num de publicaciones por organismo}
+
+#Obtener los nombres de los diez organismos que más conjuntos de datos tienen publicados y visualizar el número de éstos
+
+#Para realizar esta consulta vamos a tener que agrupar resultados, ordenarlos y limitar
+#el total a 10.
+
+q <- "select distinct ?label count(?x) as ?num {
+  ?x a <http://www.w3.org/ns/dcat#Dataset> .
+  ?x <http://purl.org/dc/terms/publisher> ?publicador.
+  ?publicador <http://www.w3.org/2004/02/skos/core#prefLabel> ?label.
+}
+group by (?label)
+order by desc(?num)
+#limit 10
+"
+res <- SPARQL(url=endpoint, q)
+E_Publicaciones_x_Organismo <- res$results
+View(E_Publicaciones_x_Organismo)
+```
+
+```{r datasets de un organismo}
+q <- "select distinct ?dataset where
+{
+  ?dataset a <http://www.w3.org/ns/dcat#Dataset> .
+  ?dataset <http://purl.org/dc/terms/publisher> ?organismo .
+  ?organismo <http://www.w3.org/2004/02/skos/core#prefLabel> 'Universidad de Extremadura'
+
+}"
+res <- SPARQL(url=endpoint, q)
+F_datasets_organismo <- (t(res$results))
+View(F_datasets_organismo)
+```
+
+```{r propiedades objeto}
+q <- "select ?propiedad ?objeto where
+{
+   <http://datos.gob.es/catalogo/u00200001-indicadores-demanda-universitaria-20151> ?propiedad ?objeto
+}"
+res <- SPARQL(url=endpoint, q)
+G_propiedades_objeto <- res$results
+View(G_propiedades_objeto)
+  
+```
+
+```{r propiedad distribución}
+q <- "select ?propiedad ?objeto where
+{
+  <http://datos.gob.es/catalogo/l01080193-viviendas-principales-segun-instalaciones-i-calefaccion/resource/0bc815e2-67d1-43a5-bc82-32cef03bf826> ?propiedad ?objeto.
+}"
+res <- SPARQL(url=endpoint, q)
+H_propiedad_distribucion <- res$results
+View(H_propiedad_distribucion)
+  
+```
+
+```{r opiedad/objeto}
+q <- 'select ?propiedad ?objeto where
+{
+   
+  http://opendata-ajuntament.barcelona.cat/data/dataset/0b7b987b-b295-409e-b366-93528a1290a1/resource/56941a47-5afb-4981-babb-a885a184cbdc/download/2011_habit_ppal_segons_instal1_calef2011.csv"^^<http://www.w3.org/2001/XMLSchema#anyURI> ?propiedad ?objeto.
+}'
+res <- SPARQL(url=endpoint, q)
+I_propiedad_objeto <- res$results
+View(I_propiedad_objeto)
+  
+```
+
+```{r}
+
+endpoint_bcn <- "https://datos.bcn.cl/es/endpoint-sparql"
+
+q <- 
+"SELECT DISTINCT ?partido ?nombre
+WHERE {
+ 
+    ?partido foaf:name ?nombre .
+    ?partido a bcnbio:PoliticalParty .
+ 
+}
+ORDER BY ?nombre"
+res <- SPARQL(url=endpoint_bcn, q)
+
+```
+ 

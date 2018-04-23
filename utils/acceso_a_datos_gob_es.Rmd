@@ -36,9 +36,9 @@ View(A_tipos_de_dato_por_grafo)
 ```
 
 ```{r etiquetas}
-q <- 'select distinct ?label where { ?x <http://www.w3.org/2004/02/skos/core#prefLabel> ?label.  }'
+q <- 'select distinct ?x ?label where { ?x <http://www.w3.org/2004/02/skos/core#prefLabel> ?label.  }'
 a <- SPARQL(url=endpoint, q)
-B_etiquetas <- t(a$results)
+B_etiquetas <- (a$results)
 View(B_etiquetas)
 
 ```
@@ -211,32 +211,10 @@ View(H_propiedad_distribucion)
   
 ```
 
+
 ```{r opiedad/objeto}
-q <- 'select ?propiedad ?objeto where
-{
-   
-  http://opendata-ajuntament.barcelona.cat/data/dataset/0b7b987b-b295-409e-b366-93528a1290a1/resource/56941a47-5afb-4981-babb-a885a184cbdc/download/2011_habit_ppal_segons_instal1_calef2011.csv"^^<http://www.w3.org/2001/XMLSchema#anyURI> ?propiedad ?objeto.
-}'
-res <- SPARQL(url=endpoint, q)
-I_propiedad_objeto <- res$results
-View(I_propiedad_objeto)
+I_Viviendas_calefaccion <- read.csv("http://opendata-ajuntament.barcelona.cat/data/dataset/0b7b987b-b295-409e-b366-93528a1290a1/resource/56941a47-5afb-4981-babb-a885a184cbdc/download/2011_habit_ppal_segons_instal1_calef2011.csv")
+View(I_Viviendas_calefaccion)
   
-```
-
-```{r}
-
-endpoint_bcn <- "https://datos.bcn.cl/es/endpoint-sparql"
-
-q <- 
-"SELECT DISTINCT ?partido ?nombre
-WHERE {
- 
-    ?partido foaf:name ?nombre .
-    ?partido a bcnbio:PoliticalParty .
- 
-}
-ORDER BY ?nombre"
-res <- SPARQL(url=endpoint_bcn, q)
-
 ```
  
